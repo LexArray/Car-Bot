@@ -8,6 +8,7 @@ const {
   Routes,
   SlashCommandBuilder,
   PermissionFlagsBits,
+  MessageFlags,
   EmbedBuilder,
 } = require('discord.js');
 require('dotenv').config();
@@ -202,11 +203,11 @@ async function handleAddCar(interaction) {
   if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) {
     return interaction.reply({
       content: 'I need the **Manage Roles** permission to do that.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   let role = guild.roles.cache.find(
     (r) => r.name.toLowerCase() === roleName.toLowerCase(),
@@ -255,7 +256,7 @@ async function handleRemoveCar(interaction) {
   if (!role || !isCarRole(role)) {
     return interaction.reply({
       content: "That doesn't look like a car role.",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -264,11 +265,11 @@ async function handleRemoveCar(interaction) {
   if (!interaction.member.roles.cache.has(role.id)) {
     return interaction.reply({
       content: `You don't have **${displayName}** on your profile.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
     await interaction.member.roles.remove(role, 'Removed via /removecar');
@@ -294,7 +295,7 @@ async function handleRemoveCar(interaction) {
 }
 
 async function handleMyCars(interaction) {
-  const ephemeral = !interaction.options.getBoolean('public');
+  const flags = !interaction.options.getBoolean('public') ? MessageFlags.Ephemeral : undefined;
 
   const cars = interaction.member.roles.cache
     .filter(isCarRole)
@@ -304,7 +305,7 @@ async function handleMyCars(interaction) {
   if (cars.length === 0) {
     return interaction.reply({
       content: "You haven't added any cars yet. Try `/addcar`.",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -313,11 +314,11 @@ async function handleMyCars(interaction) {
     .setDescription(cars.join('\n'))
     .setColor(0x2b6cb0);
 
-  return interaction.reply({ embeds: [embed], ephemeral });
+  return interaction.reply({ embeds: [embed], flags });
 }
 
 async function handleListCars(interaction) {
-  const ephemeral = !interaction.options.getBoolean('public');
+  const flags = !interaction.options.getBoolean('public') ? MessageFlags.Ephemeral : undefined;
   const filterMake = interaction.options.getString('make')?.toLowerCase().trim();
   const filterTrans = interaction.options.getString('transmission')?.toLowerCase().trim();
   const filterType = interaction.options.getString('type')?.trim();
@@ -343,7 +344,7 @@ async function handleListCars(interaction) {
       content: hasFilter
         ? 'No cars match those filters.'
         : 'No car roles exist yet. Be the first — try `/addcar`.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -364,16 +365,16 @@ async function handleListCars(interaction) {
       text: cars.length > 50 ? `Showing 50 of ${cars.length}` : `${cars.length} total`,
     });
 
-  return interaction.reply({ embeds: [embed], ephemeral });
+  return interaction.reply({ embeds: [embed], flags });
 }
 
 async function handleWhoHas(interaction) {
-  const ephemeral = !interaction.options.getBoolean('public');
+  const flags = !interaction.options.getBoolean('public') ? MessageFlags.Ephemeral : undefined;
   const roleId = interaction.options.getString('car', true);
   const role = interaction.guild.roles.cache.get(roleId);
 
   if (!role || !isCarRole(role)) {
-    return interaction.reply({ content: "That doesn't look like a car role.", ephemeral: true });
+    return interaction.reply({ content: "That doesn't look like a car role.", flags: MessageFlags.Ephemeral });
   }
 
   await interaction.guild.members.fetch().catch(() => null);
@@ -382,7 +383,7 @@ async function handleWhoHas(interaction) {
   if (owners.length === 0) {
     return interaction.reply({
       content: `Nobody currently owns **${carDisplayName(role)}**.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -392,7 +393,7 @@ async function handleWhoHas(interaction) {
     .setColor(0x2b6cb0)
     .setFooter({ text: `${owners.length} owner${owners.length === 1 ? '' : 's'}` });
 
-  return interaction.reply({ embeds: [embed], ephemeral });
+  return interaction.reply({ embeds: [embed], flags });
 }
 
 async function handleCleanupCars(interaction) {
@@ -400,11 +401,11 @@ async function handleCleanupCars(interaction) {
   if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) {
     return interaction.reply({
       content: 'I need the **Manage Roles** permission.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   await interaction.guild.members.fetch().catch(() => null);
 
   const empty = interaction.guild.roles.cache.filter(
@@ -470,7 +471,7 @@ client.on('interactionCreate', async (interaction) => {
   } catch (err) {
     console.error('Unhandled interaction error:', err);
     if (interaction.isRepliable() && !interaction.replied) {
-      interaction.reply({ content: 'Something went wrong.', ephemeral: true }).catch(() => {});
+      interaction.reply({ content: 'Something went wrong.', flags: MessageFlags.Ephemeral }).catch(() => {});
     }
   }
 });

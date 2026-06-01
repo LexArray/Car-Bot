@@ -78,6 +78,27 @@ const TYPE_COLORS = {
 
 const getCarType = (make) => MAKE_TYPE_LOWER[make.toLowerCase().trim()] ?? 'Other';
 
+// ---- rate limiting ----------------------------------------------------------
+
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+// userId -> array of add timestamps within the current window
+const addCarLog = new Map();
+
+function checkAddRateLimit(userId) {
+  const now = Date.now();
+  const recent = (addCarLog.get(userId) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  addCarLog.set(userId, recent);
+  return recent;
+}
+
+function recordCarAdd(userId) {
+  const recent = addCarLog.get(userId) ?? [];
+  recent.push(Date.now());
+  addCarLog.set(userId, recent);
+}
+
 // Parse a display name back into { make, model, year, transmission }
 const parseCarName = (displayName) => {
   const transMatch = displayName.match(/\[(.+?)\]$/);
@@ -197,6 +218,15 @@ async function handleAddCar(interaction) {
   const carName = buildCarName(make, model, year, transmission);
   const roleName = CAR_ROLE_PREFIX + carName;
 
+  const recent = checkAddRateLimit(interaction.user.id);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    const resetsIn = Math.ceil((recent[0] + RATE_LIMIT_WINDOW_MS - Date.now()) / 60000);
+    return interaction.reply({
+      content: `You've added ${RATE_LIMIT_MAX} cars in the last hour. Try again in **${resetsIn} minute${resetsIn === 1 ? '' : 's'}**.`,
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
   const guild = interaction.guild;
   const me = guild.members.me;
 
@@ -246,6 +276,7 @@ async function handleAddCar(interaction) {
     return interaction.editReply('Failed to assign the role.');
   }
 
+  recordCarAdd(interaction.user.id);
   return interaction.editReply(`**${carName}** was added to your profile.`);
 }
 

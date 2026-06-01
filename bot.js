@@ -130,7 +130,7 @@ const commands = [
       o.setName('make').setDescription('Filter by manufacturer, e.g. Toyota').setMaxLength(40),
     )
     .addStringOption((o) =>
-      o.setName('transmission').setDescription('Filter by transmission, e.g. MT or AT').setMaxLength(30),
+      o.setName('transmission').setDescription('Filter by transmission — MT matches 5MT, 4MT, 6MT, etc.').setMaxLength(30),
     )
     .addStringOption((o) =>
       o.setName('type').setDescription('Filter by region type: JDM, Euro, American, Other').setMaxLength(20),

@@ -121,7 +121,10 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName('mycars')
-    .setDescription('List the cars on your profile'),
+    .setDescription('List the cars on your profile')
+    .addBooleanOption((o) =>
+      o.setName('public').setDescription('Show the result publicly in the channel (default: only you see it)'),
+    ),
 
   new SlashCommandBuilder()
     .setName('listcars')
@@ -134,6 +137,9 @@ const commands = [
     )
     .addStringOption((o) =>
       o.setName('type').setDescription('Filter by region type: JDM, Euro, American, Other').setMaxLength(20),
+    )
+    .addBooleanOption((o) =>
+      o.setName('public').setDescription('Show the result publicly in the channel (default: only you see it)'),
     ),
 
   new SlashCommandBuilder()
@@ -145,6 +151,9 @@ const commands = [
         .setDescription('Which car to look up')
         .setRequired(true)
         .setAutocomplete(true),
+    )
+    .addBooleanOption((o) =>
+      o.setName('public').setDescription('Show the result publicly in the channel (default: only you see it)'),
     ),
 
   new SlashCommandBuilder()
@@ -285,6 +294,8 @@ async function handleRemoveCar(interaction) {
 }
 
 async function handleMyCars(interaction) {
+  const ephemeral = !interaction.options.getBoolean('public');
+
   const cars = interaction.member.roles.cache
     .filter(isCarRole)
     .map((r) => carDisplayName(r))
@@ -302,10 +313,11 @@ async function handleMyCars(interaction) {
     .setDescription(cars.join('\n'))
     .setColor(0x2b6cb0);
 
-  return interaction.reply({ embeds: [embed], ephemeral: true });
+  return interaction.reply({ embeds: [embed], ephemeral });
 }
 
 async function handleListCars(interaction) {
+  const ephemeral = !interaction.options.getBoolean('public');
   const filterMake = interaction.options.getString('make')?.toLowerCase().trim();
   const filterTrans = interaction.options.getString('transmission')?.toLowerCase().trim();
   const filterType = interaction.options.getString('type')?.trim();
@@ -352,10 +364,11 @@ async function handleListCars(interaction) {
       text: cars.length > 50 ? `Showing 50 of ${cars.length}` : `${cars.length} total`,
     });
 
-  return interaction.reply({ embeds: [embed] });
+  return interaction.reply({ embeds: [embed], ephemeral });
 }
 
 async function handleWhoHas(interaction) {
+  const ephemeral = !interaction.options.getBoolean('public');
   const roleId = interaction.options.getString('car', true);
   const role = interaction.guild.roles.cache.get(roleId);
 
@@ -379,7 +392,7 @@ async function handleWhoHas(interaction) {
     .setColor(0x2b6cb0)
     .setFooter({ text: `${owners.length} owner${owners.length === 1 ? '' : 's'}` });
 
-  return interaction.reply({ embeds: [embed] });
+  return interaction.reply({ embeds: [embed], ephemeral });
 }
 
 async function handleCleanupCars(interaction) {
